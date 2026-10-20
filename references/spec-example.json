@@ -1,0 +1,44 @@
+{
+  "title": "中文标题：示例论文的排版译稿",
+  "original_title": "English Title: A Typeset Chinese Translation",
+  "authors": "Author A¹, Author B², Author C¹*",
+  "affiliations": [
+    "¹ 示例大学示例学院，示例市 100000",
+    "² 示例大学信息学院，示例市 200010"
+  ],
+  "correspondence": "* 通讯作者：author@example.edu.cn",
+  "doi": "Journal  ·  https://doi.org/10.xxxx/example",
+  "note": "说明：本文件为中文参考译稿，专业术语与数据以英文原文为准；为保持数据原貌，插图沿用原文，图内英文标注未作改动。",
+  "abstract": "这里是摘要全文。缩写首次出现时写“英文全称（缩写）”；变量上下标用 x~i~、σ~max~、E~a~^eff^ 表示。",
+  "keywords": "关键词一；关键词二；关键词三；关键词四",
+  "header": "中文译稿  ·  中文短标题",
+  "toc_figure": {
+    "path": "figs/toc.png",
+    "width_cm": 12.6,
+    "lead": "图文摘要.",
+    "caption": "图文摘要说明。"
+  },
+  "blocks": [
+    {"type": "h1", "text": "引言"},
+    {"type": "p", "text": "正文第一段。逐段对应原文，不省略条件、数值和限定语。引用写作^1−5^，变量写作 x~i~ 与 E~a~^eff^。"},
+    {"type": "p", "text": "正文第二段。数字与单位之间保留空格：10 nm、25 °C、1.5 h、5 mg/L。"},
+
+    {"type": "figure", "path": "figs/fig1.png", "width_cm": 16.2, "lead": "图 1.", "caption": "图注全文。(a) 子图一。(b) 子图二。"},
+    {"type": "h2", "text": "方法"},
+    {"type": "p", "text": "描述模型或分析过程的公式为"},
+    {"type": "equation", "path": "eq/eq1.png", "width_cm": 14.0},
+    {"type": "p", "text": "其中各变量的含义与原文一致。"},
+
+    {"type": "table", "lead": "表 S1  示例表格", "headers": ["项目", "数值", "变化", "备注"], "rows": [
+      ["A", "1.0", "—", "示例条目"],
+      ["B", "2.5", "↑", "示例条目"],
+      ["C", "3.2", "↓", "示例条目"]
+    ], "widths_cm": [5.0, 4.0, 2.5, 4.5], "note": "注：括号中的数值表示示例说明。"},
+
+    {"type": "pagebreak"},
+    {"type": "refs", "page_break_before": false, "items": [
+      "(1) Author, A.; Author, B. Example reference title. Journal Name 2026, 1 (2), 3–4.",
+      "(2) Author, C. Another example reference. Journal Name 2026, 5 (6), 7–8."
+    ]}
+  ]
+}

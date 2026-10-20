@@ -1,0 +1,4 @@
+interface:
+  display_name: "Academic Paper Translation ZH"
+  short_description: "Translate academic PDFs into typeset Chinese PDFs"
+  default_prompt: "Use $academic-paper-translation-zh to translate this paper PDF into a Chinese A4 PDF, preserving figures, captions, equations, tables, and references."
