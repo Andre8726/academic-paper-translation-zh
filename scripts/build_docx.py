@@ -45,9 +45,10 @@ class Builder:
 
     # ---------- text ----------
     @staticmethod
-    def _m_run(text):
+    def _m_run(text, upright=False):
         from xml.sax.saxutils import escape
-        return f'<m:r><m:t>{escape(str(text))}</m:t></m:r>'
+        rpr = '<m:rPr><m:sty m:val="p"/></m:rPr>' if upright else ''
+        return f'<m:r>{rpr}<m:t>{escape(str(text))}</m:t></m:r>'
 
     def _m_base(self, base, accent=None):
         if accent:
@@ -60,16 +61,24 @@ class Builder:
         xml = f'<m:oMath xmlns:m="{M_NS}">'
         if sub is not None and sup is not None:
             xml += (f'<m:sSubSup><m:e>{self._m_base(base, accent)}</m:e>'
-                    f'<m:sub>{self._m_run(sub)}</m:sub><m:sup>{self._m_run(sup)}</m:sup></m:sSubSup>')
+                    f'<m:sub>{self._m_run(sub, upright=True)}</m:sub><m:sup>{self._m_run(sup, upright=True)}</m:sup></m:sSubSup>')
         elif sub is not None:
             xml += (f'<m:sSub><m:e>{self._m_base(base, accent)}</m:e>'
-                    f'<m:sub>{self._m_run(sub)}</m:sub></m:sSub>')
+                    f'<m:sub>{self._m_run(sub, upright=True)}</m:sub></m:sSub>')
         else:
             xml += self._m_base(base, accent)
         xml += '</m:oMath>'
         p._p.append(parse_xml(xml))
 
     def _add_plain(self, p, text, size, bold, color, east, ascii_font, italic):
+        def emit(part, is_math=False):
+            if not part:
+                return None
+            r = p.add_run(part)
+            tok_font = "Songti SC" if re.search(r"[\u0370-\u03ff\u0300-\u036f\u20d0-\u20ff]", part) else ascii_font
+            self._font(r, east=east, ascii_font=tok_font, size=size,
+                       bold=bold, italic=(italic or is_math), color=color)
+            return r
         for tok in TOKEN_RE.split(str(text)):
             if not tok:
                 continue
@@ -78,12 +87,28 @@ class Builder:
                 sub = True; tok = tok[1:-1]
             elif tok.startswith("^") and tok.endswith("^") and len(tok) > 2:
                 sup = True; tok = tok[1:-1]
-            r = p.add_run(tok)
-            tok_font = "Songti SC" if re.search(r"[\u0370-\u03ff\u0300-\u036f\u20d0-\u20ff]", tok) else ascii_font
-            self._font(r, east=east, ascii_font=tok_font, size=size,
-                       bold=bold, italic=italic, color=color)
-            if sub: r.font.subscript = True
-            if sup: r.font.superscript = True
+            if sub or sup:
+                # Sub/superscript labels (DL, FL, X, Y, Z, AHE, ...) stay upright.
+                r = emit(tok, False)
+                if r is not None:
+                    if sub: r.font.subscript = True
+                    if sup: r.font.superscript = True
+                continue
+            # Greek runs are variables; italicize them.
+            for part in re.split(r"([\u0370-\u03ff]+)", tok):
+                if not part:
+                    continue
+                if re.fullmatch(r"[\u0370-\u03ff]+", part):
+                    emit(part, True)
+                    continue
+                # A single trailing Latin letter immediately before a sub/sup is a variable,
+                # e.g. R in "R~XY~" or the R at the end of "电阻 R".
+                m = re.search(r"([A-Za-z])$", part)
+                if m and (len(part) == 1 or not part[-2].isalpha()):
+                    emit(part[:-1], False)
+                    emit(part[-1], True)
+                else:
+                    emit(part, False)
 
     def _add_segment(self, p, text, size, bold, color, east, ascii_font, italic):
         text = str(text)
