@@ -85,6 +85,16 @@ class Builder:
             if sub: r.font.subscript = True
             if sup: r.font.superscript = True
 
+    def _add_segment(self, p, text, size, bold, color, east, ascii_font, italic):
+        text = str(text)
+        pos = 0
+        for m in ACCENT_RE.finditer(text):
+            self._add_plain(p, text[pos:m.start()], size, bold, color, east, ascii_font, italic)
+            mark = {"\u20d7": "→", "\u0302": "^", "\u0303": "~"}.get(m.group(2), m.group(2))
+            self.add_inline_math(p, m.group(1), accent=mark)
+            pos = m.end()
+        self._add_plain(p, text[pos:], size, bold, color, east, ascii_font, italic)
+
     def add_runs(self, p, text, size=10.5, bold=False, color=BLACK,
                  east=None, ascii_font=None, italic=False):
         east = east or self.f["body_east"]
@@ -93,12 +103,12 @@ class Builder:
         pos = 0
         # Base~sub~^sup^ must be one OMML object; separate runs put sup far right.
         for m in COMBINED_RE.finditer(text):
-            self._add_plain(p, text[pos:m.start()], size, bold, color, east, ascii_font, italic)
+            self._add_segment(p, text[pos:m.start()], size, bold, color, east, ascii_font, italic)
             base, sub, sup = m.group(1), m.group(2), m.group(3)
             self.add_inline_math(p, base, sub=sub, sup=sup)
             pos = m.end()
         tail = text[pos:]
-        self._add_plain(p, tail, size, bold, color, east, ascii_font, italic)
+        self._add_segment(p, tail, size, bold, color, east, ascii_font, italic)
 
     @staticmethod
     def _font(run, east, ascii_font, size=None, bold=None, italic=None, color=None):
