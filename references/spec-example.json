@@ -26,7 +26,7 @@
     {"type": "figure", "path": "figs/fig1.png", "width_cm": 16.2, "lead": "图 1.", "caption": "图注全文。(a) 子图一。(b) 子图二。"},
     {"type": "h2", "text": "方法"},
     {"type": "p", "text": "描述模型或分析过程的公式为"},
-    {"type": "equation", "path": "eq/eq1.png", "width_cm": 14.0},
+    {"type": "equation_omml", "number": "1", "files": ["eq_omml/eq1_0.xml"]},
     {"type": "p", "text": "其中各变量的含义与原文一致。"},
 
     {"type": "table", "lead": "表 S1  示例表格", "headers": ["项目", "数值", "变化", "备注"], "rows": [

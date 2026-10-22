@@ -95,17 +95,37 @@ PYTHONPATH="$JOB/.pymupdf" /usr/bin/python3 "$SKILL/scripts/extract_pdf.py" extr
 - 参考文献不翻译；只清理 PDF 断行造成的 `well- known`、`1234− 1240` 等伪空格。
 - 图注翻译为“图 1. ……”或“图 S1. ……”，表注为“表 1 ……”或“表 S1 ……”，句末用中文句号。
 
-### 5. 生成公式图
+### 5. 公式：优先原生 OMML
 
-```bash
-MPLCONFIGDIR="$JOB/.mpl" /usr/bin/python3 "$SKILL/scripts/render_equation.py" \
-  --tex '$\frac{\partial u}{\partial t}=D\nabla^2 u$' \
-  --out "$JOB/eq/eq1.png" --fontsize 17
+目标是把展示公式写成 **Word 原生公式（OMML）**，在 PDF 中可选中、可编辑、矢量显示；不要把公式截图或 PNG 作为默认方案。
+
+先把公式写成 JSON：
+
+```json
+{
+  "eq1": {"number": "1", "rows": ["\\frac{d\\hat{m}}{dt}=\\gamma\\hat{m}\\times\\frac{dF}{d\\hat{m}}"]},
+  "eq2": {"number": "2", "rows": ["E=mc^2"]}
+}
 ```
 
-- 公式宽度按 Word 正文宽度设置，通常 12–16 cm；不要小到看不清。
-- 每个公式单独一张图；行内简单符号不要做成图。
-- 公式图白底、黑字、无标题、无边框。
+`rows` 中每一行是一条 LaTeX；多行公式就写多条。转换：
+
+```bash
+"$DSH_PYTHON" -m pip install --target "$JOB/.mathdeps" latex2mathml
+PYTHONPATH="$JOB/.mathdeps" "$DSH_PYTHON" "$SKILL/scripts/latex_to_omml.py" \
+  --input "$JOB/equations.json" --out "$JOB/eq_omml"
+```
+
+输出 `eq_omml/<name>_<i>.xml` 与 `eq_omml/omml_map.json`。spec 中使用：
+
+```json
+{"type": "equation_omml", "number": "1", "files": ["eq_omml/eq1_0.xml"]}
+```
+
+- 公式编号放在右侧；多行公式共用一个编号。
+- 转换依赖 Microsoft Word 的 `mathml2omml.xsl`；macOS 默认路径已内置，其他平台用 `--xsl` 指定。
+- 只有当 LaTeX 过于复杂、OMML 转换失败时，才退回 `render_equation.py` 生成 PNG，并在 spec 中使用 `{"type": "equation", "path": ...}`。
+- 不要用整页截图代替公式，也不要把公式放进正文图片。
 
 ### 6. 写翻译 spec
 
@@ -130,7 +150,7 @@ MPLCONFIGDIR="$JOB/.mpl" /usr/bin/python3 "$SKILL/scripts/render_equation.py" \
     {"type": "h1", "text": "引言"},
     {"type": "p", "text": "正文……"},
     {"type": "figure", "path": "figs/fig1.png", "width_cm": 16.2, "lead": "图 1.", "caption": "……"},
-    {"type": "equation", "path": "eq/eq1.png", "width_cm": 15.6},
+    {"type": "equation_omml", "number": "1", "files": ["eq_omml/eq1_0.xml"]},
     {"type": "table", "lead": "表 S1  ……", "headers": ["项目", "数值"], "rows": [["...", "..."]], "widths_cm": [8.0, 8.0], "note": "注：……"},
     {"type": "pagebreak"},
     {"type": "refs", "page_break_before": true, "items": ["(1) ...", "(2) ..."]}
@@ -188,7 +208,7 @@ PYTHONPATH="$JOB/.pymupdf" /usr/bin/python3 "$SKILL/scripts/inspect_pdf.py" \
 - 正文覆盖率：原文每个一级段落/小节在译稿中有对应内容；不得省略方法、数据可用性、作者信息、致谢等原文已有的部分。
 - 图覆盖率：原文所有编号图（含补充图）都出现；图注完整；不得用一张拼图替代多个图号。
 - 表覆盖率：所有编号表重建；数值、单位、上下标、脚注正确。
-- 公式覆盖率：论文中的展示公式、编号公式和变量定义保留；上下标与符号一致。
+- 公式覆盖率：论文中的展示公式、编号公式和变量定义保留；优先使用可编辑的 OMML，上下标与符号一致。
 - 参考文献：条数一致，编号连续，保留英文；不把引用编号误当正文。
 - 版式：无表格跨页、无图注分离、无标题孤行、无文字溢出页面。
 - 字体：`missingFonts` 为空；PDF 文本可搜索。

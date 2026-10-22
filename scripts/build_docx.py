@@ -12,9 +12,9 @@ import re
 from pathlib import Path
 
 from docx import Document
-from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
@@ -363,6 +363,47 @@ class Builder:
             self._para(p, before=4, after=6, line=1.15, align=WD_ALIGN_PARAGRAPH.LEFT)
             self.add_runs(p, block["note"], size=8.3, color=RGBColor(0x33, 0x33, 0x33))
 
+    def equation_omml(self, block):
+        """Insert native Office Math (OMML) rows in a borderless 2-column table."""
+        files = block.get("files") or []
+        if not files:
+            raise ValueError("equation_omml needs files")
+        table = self.doc.add_table(rows=1, cols=2)
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.autofit = False
+        widths = [Cm(block.get("formula_width_cm", 15.2)), Cm(block.get("number_width_cm", 1.2))]
+        for i, w in enumerate(widths):
+            table.columns[i].width = w
+            table.rows[0].cells[i].width = w
+        # no borders, tight margins
+        tblPr = table._tbl.tblPr
+        borders = OxmlElement("w:tblBorders")
+        for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+            el = OxmlElement(f"w:{edge}"); el.set(qn("w:val"), "nil"); borders.append(el)
+        tblPr.append(borders)
+        mar = OxmlElement("w:tblCellMar")
+        for side, val in (("top", 60), ("left", 20), ("bottom", 60), ("right", 20)):
+            el = OxmlElement(f"w:{side}"); el.set(qn("w:w"), str(val)); el.set(qn("w:type"), "dxa"); mar.append(el)
+        tblPr.append(mar)
+        lay = OxmlElement("w:tblLayout"); lay.set(qn("w:type"), "fixed"); tblPr.append(lay)
+
+        left, right = table.rows[0].cells
+        left.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        right.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        p = left.paragraphs[0]
+        self._para(p, before=0, after=0, line=1.0, align=WD_ALIGN_PARAGRAPH.CENTER)
+        for idx, f in enumerate(files):
+            if idx:
+                p = left.add_paragraph()
+                self._para(p, before=0, after=0, line=1.0, align=WD_ALIGN_PARAGRAPH.CENTER)
+            xml = Path(f).read_text(encoding="utf-8")
+            p._p.append(parse_xml(xml))
+        p = right.paragraphs[0]
+        self._para(p, before=0, after=0, line=1.0, align=WD_ALIGN_PARAGRAPH.RIGHT)
+        self.add_runs(p, f"({block.get('number', '')})", size=block.get("number_size", 10.5))
+        trPr = table.rows[0]._tr.get_or_add_trPr()
+        cant = OxmlElement("w:cantSplit"); cant.set(qn("w:val"), "true"); trPr.append(cant)
+
     def refs(self, block):
         if block.get("page_break_before"):
             self.doc.add_page_break()
@@ -426,6 +467,8 @@ class Builder:
                 self.picture(block["path"], block.get("width_cm", 15.0),
                              before=block.get("before", 2), after=block.get("after", 2),
                              keep_next=True)
+            elif kind == "equation_omml":
+                self.equation_omml(block)
             elif kind == "table":
                 self.table(block)
             elif kind == "pagebreak":

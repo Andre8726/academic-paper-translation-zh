@@ -6,7 +6,7 @@
 
 - 翻译一篇英文论文，输出排版整洁的中文 PDF。
 - 正文与补充信息可分别输出，补充图、补充表不遗漏。
-- 保留论文中的展示公式与编号公式；表格重建为原生 Word 表格。
+- 展示公式优先重建为原生 Word 公式（OMML，可选中、可编辑）；表格重建为原生 Word 表格。
 - 图内英文刻度/图例保持原样，图注和表注翻译为中文。
 - 参考文献保留英文原文，便于核对。
 
@@ -68,7 +68,7 @@ macOS 上如果 DSH 运行时 Python 加载 PyMuPDF 报代码签名错误，使�
 1. `extract_pdf.py inventory`：统计页数、字符数、图片数，判断是否为扫描件。
 2. `extract_pdf.py extract`：导出 `document.json`、页面预览和内嵌图。
 3. 逐页翻译，写成 `translation.json`（见 `references/spec-example.json`）。
-4. `render_equation.py`：把展示公式转成 PNG。
+4. `latex_to_omml.py`：把展示公式转成 Word 原生 OMML；仅在转换失败时用 `render_equation.py` 生成 PNG。
 5. `build_docx.py`：生成中文 DOCX。
 6. LibreOffice Kit 导出 PDF。
 7. `inspect_pdf.py`：渲染全部页面，检查图、表、公式、字体和空白页。
@@ -88,6 +88,7 @@ scripts/
   build_docx.py
   extract_pdf.py
   inspect_pdf.py
+  latex_to_omml.py
   render_equation.py
 agents/openai.yaml
 ```

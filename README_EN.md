@@ -7,7 +7,7 @@ Translate English academic papers or supporting-information PDFs into a **search
 - Full-paper translation with a clean academic layout.
 - Separate main-paper and supporting-information PDFs.
 - Embedded figures reused at original resolution; vector figures rendered at 300 dpi.
-- Equations rendered from mathtext; native Word tables; English references preserved.
+- Equations rebuilt as native Word OMML (editable/selectable) where possible, with PNG fallback; native Word tables; English references preserved.
 - Page headers/footers, Chinese captions, and a validated visual pass.
 
 ## Install
