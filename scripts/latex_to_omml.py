@@ -62,6 +62,12 @@ def main():
             mathml = convert(tex)
             dom = etree.fromstring(mathml.encode("utf-8"))
             omml = str(xsl(dom))
+            if tex.lstrip().startswith("="):
+                # LibreOffice Math shows "¿" for an expression starting with "=".
+                # Insert a zero-width non-joiner as an invisible left operand.
+                j = omml.find("<m:oMath")
+                j = omml.find(">", j) + 1
+                omml = omml[:j] + '<m:r><m:rPr><m:nor/></m:rPr><m:t>&#8203;</m:t></m:r>' + omml[j:]
             fn = f"{name}_{i}.xml"
             (out / fn).write_text(omml, encoding="utf-8")
             files.append(str(out / fn))
