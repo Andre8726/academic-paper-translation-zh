@@ -23,6 +23,9 @@ GRAY = RGBColor(0x59, 0x59, 0x59)
 DARK = RGBColor(0x22, 0x22, 0x22)
 BLACK = RGBColor(0, 0, 0)
 TOKEN_RE = re.compile(r"(~[^~]+~|\^[^\^]+\^)")
+COMBINED_RE = re.compile(r"([A-Za-z\u0370-\u03ff\u0394])~([^~]+)~\^([^\^]+)\^")
+ACCENT_RE = re.compile(r"([A-Za-z\u0370-\u03ff\u0394])([\u0302\u20d7\u0303])")
+M_NS = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 
 
 class Builder:
@@ -41,32 +44,61 @@ class Builder:
         self._setup_header_footer()
 
     # ---------- text ----------
+    @staticmethod
+    def _m_run(text):
+        from xml.sax.saxutils import escape
+        return f'<m:r><m:t>{escape(str(text))}</m:t></m:r>'
+
+    def _m_base(self, base, accent=None):
+        if accent:
+            from xml.sax.saxutils import escape
+            return (f'<m:acc><m:accPr><m:chr m:val="{accent}"/></m:accPr>'
+                    f'<m:e>{self._m_run(base)}</m:e></m:acc>')
+        return self._m_run(base)
+
+    def add_inline_math(self, p, base, sub=None, sup=None, accent=None):
+        xml = f'<m:oMath xmlns:m="{M_NS}">'
+        if sub is not None and sup is not None:
+            xml += (f'<m:sSubSup><m:e>{self._m_base(base, accent)}</m:e>'
+                    f'<m:sub>{self._m_run(sub)}</m:sub><m:sup>{self._m_run(sup)}</m:sup></m:sSubSup>')
+        elif sub is not None:
+            xml += (f'<m:sSub><m:e>{self._m_base(base, accent)}</m:e>'
+                    f'<m:sub>{self._m_run(sub)}</m:sub></m:sSub>')
+        else:
+            xml += self._m_base(base, accent)
+        xml += '</m:oMath>'
+        p._p.append(parse_xml(xml))
+
+    def _add_plain(self, p, text, size, bold, color, east, ascii_font, italic):
+        for tok in TOKEN_RE.split(str(text)):
+            if not tok:
+                continue
+            sub = sup = False
+            if tok.startswith("~") and tok.endswith("~") and len(tok) > 2:
+                sub = True; tok = tok[1:-1]
+            elif tok.startswith("^") and tok.endswith("^") and len(tok) > 2:
+                sup = True; tok = tok[1:-1]
+            r = p.add_run(tok)
+            tok_font = "Songti SC" if re.search(r"[\u0370-\u03ff\u0300-\u036f\u20d0-\u20ff]", tok) else ascii_font
+            self._font(r, east=east, ascii_font=tok_font, size=size,
+                       bold=bold, italic=italic, color=color)
+            if sub: r.font.subscript = True
+            if sup: r.font.superscript = True
+
     def add_runs(self, p, text, size=10.5, bold=False, color=BLACK,
                  east=None, ascii_font=None, italic=False):
         east = east or self.f["body_east"]
         ascii_font = ascii_font or self.f["ascii"]
         text = str(text)
-        # Stacked-looking inline form: B~FL,X~^0^ -> B⁰~FL,X~.
-        # Separate subscript then superscript runs put the 0 far to the right.
-        text = re.sub(r'([A-Za-z\u0370-\u03ff\u0394])~([^~]+)~\^0\^', r'\1⁰~\2~', text)
-        for tok in TOKEN_RE.split(text):
-            if not tok:
-                continue
-            sub = sup = False
-            if tok.startswith("~") and tok.endswith("~") and len(tok) > 2:
-                sub = True
-                tok = tok[1:-1]
-            elif tok.startswith("^") and tok.endswith("^") and len(tok) > 2:
-                sup = True
-                tok = tok[1:-1]
-            r = p.add_run(tok)
-            tok_font = "STIXGeneral" if re.search(r'[\u0370-\u03ff\u0300-\u036f\u20d0-\u20ff]', tok) else ascii_font
-            self._font(r, east=east, ascii_font=tok_font, size=size,
-                       bold=bold, italic=italic, color=color)
-            if sub:
-                r.font.subscript = True
-            if sup:
-                r.font.superscript = True
+        pos = 0
+        # Base~sub~^sup^ must be one OMML object; separate runs put sup far right.
+        for m in COMBINED_RE.finditer(text):
+            self._add_plain(p, text[pos:m.start()], size, bold, color, east, ascii_font, italic)
+            base, sub, sup = m.group(1), m.group(2), m.group(3)
+            self.add_inline_math(p, base, sub=sub, sup=sup)
+            pos = m.end()
+        tail = text[pos:]
+        self._add_plain(p, tail, size, bold, color, east, ascii_font, italic)
 
     @staticmethod
     def _font(run, east, ascii_font, size=None, bold=None, italic=None, color=None):
