@@ -45,7 +45,11 @@ class Builder:
                  east=None, ascii_font=None, italic=False):
         east = east or self.f["body_east"]
         ascii_font = ascii_font or self.f["ascii"]
-        for tok in TOKEN_RE.split(str(text)):
+        text = str(text)
+        # Stacked-looking inline form: B~FL,X~^0^ -> B⁰~FL,X~.
+        # Separate subscript then superscript runs put the 0 far to the right.
+        text = re.sub(r'([A-Za-z\u0370-\u03ff\u0394])~([^~]+)~\^0\^', r'\1⁰~\2~', text)
+        for tok in TOKEN_RE.split(text):
             if not tok:
                 continue
             sub = sup = False
@@ -56,7 +60,8 @@ class Builder:
                 sup = True
                 tok = tok[1:-1]
             r = p.add_run(tok)
-            self._font(r, east=east, ascii_font=ascii_font, size=size,
+            tok_font = "STIXGeneral" if re.search(r'[\u0370-\u03ff\u0300-\u036f\u20d0-\u20ff]', tok) else ascii_font
+            self._font(r, east=east, ascii_font=tok_font, size=size,
                        bold=bold, italic=italic, color=color)
             if sub:
                 r.font.subscript = True
