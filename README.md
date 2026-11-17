@@ -4,9 +4,11 @@
 
 ## 效果演示
 
-![英文示例 PDF 和中文译稿并排对照，展示原图、中文图注、公式与表格](docs/demo/translation-preview.webp)
+![Okubo 等人的论文英文原文与中文 PDF 译稿并排对照](docs/demo/translation-preview.webp)
 
-左侧为自制英文示例，右侧为使用本项目流程导出的中文 A4 PDF。正文和图注译为中文，保留原图及图内英文标注，并重建公式和表格。截图用于展示版式，中文 PDF 的正文可搜索和选中。
+左侧为英文论文节选，右侧为使用本项目流程翻译、重新排版并导出的中文 A4 PDF 节选。导出的中文文字可搜索和选中。
+
+原文为 Ren Okubo、Yu Fujikata、Izumi Takahara 和 Teruyasu Mizoguchi 发表于 *npj Computational Materials* 的论文（2026）。[原文与 DOI](https://www.nature.com/articles/s41524-026-02384-4) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ## 适合用它做什么
 

@@ -4,9 +4,11 @@ Translate English academic papers or supporting-information PDFs into a **search
 
 ## Example output
 
-![English sample PDF and Chinese translation side by side, showing the retained figure, translated caption, equation, and table](docs/demo/translation-preview.webp)
+![English and Chinese PDF excerpts from Okubo et al. shown side by side](docs/demo/translation-preview.webp)
 
-The original English sample is on the left. The Chinese A4 PDF exported by this workflow is on the right. The body and caption are translated, the original figure and its English labels are retained, and the equation and table are rebuilt. Text in the exported PDF is searchable and selectable.
+The English paper excerpt is on the left. The Chinese excerpt is on the right, translated, typeset, and exported as an A4 PDF using this workflow. Text in the exported PDF is searchable and selectable.
+
+The source paper is by Ren Okubo, Yu Fujikata, Izumi Takahara, and Teruyasu Mizoguchi, published in *npj Computational Materials* (2026). [Original article and DOI](https://www.nature.com/articles/s41524-026-02384-4) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ## Features
 
